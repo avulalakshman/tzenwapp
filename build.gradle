@@ -37,6 +37,8 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.4'
     compile('org.apache.poi:poi:4.0.0')
     compile('org.apache.poi:poi-ooxml:4.0.0')
+    compile name: 'ga-tt-ext-0.0.2-SNAPSHOT'
+    compile name: 'ga-timetable-0.0.2-SNAPSHOT'
     compile('com.spaneos:ga-timetable:0.0.2-SNAPSHOT')
     compile('com.spaneos:ga-tt-ext:0.0.2-SNAPSHOT')
     compile group: 'com.fasterxml.jackson.core', name:'jackson-databind', version: '2.9.0'
