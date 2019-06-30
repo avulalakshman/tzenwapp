@@ -1,6 +1,6 @@
 buildscript {
 	ext {
-		springBootVersion = '2.1.2.RELEASE'
+		springBootVersion = '2.0.8.RELEASE'
 	}
 	repositories {
 	    mavenLocal()
@@ -35,12 +35,11 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	compileOnly 'org.projectlombok:lombok:1.18.4'
     annotationProcessor 'org.projectlombok:lombok:1.18.4'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
     compile('org.apache.poi:poi:4.0.0')
     compile('org.apache.poi:poi-ooxml:4.0.0')
     compile name: 'ga-tt-ext-0.0.2-SNAPSHOT'
     compile name: 'ga-timetable-0.0.2-SNAPSHOT'
-    compile('com.spaneos:ga-timetable:0.0.2-SNAPSHOT')
-    compile('com.spaneos:ga-tt-ext:0.0.2-SNAPSHOT')
     compile group: 'com.fasterxml.jackson.core', name:'jackson-databind', version: '2.9.0'
     compile group: 'com.fasterxml.jackson.datatype', name:'jackson-datatype-jdk8', version: '2.9.0'
     compile fileTree(dir: 'libs', include: ['*.jar'])

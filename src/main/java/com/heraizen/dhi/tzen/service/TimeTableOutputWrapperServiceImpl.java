@@ -1,14 +1,11 @@
 package com.heraizen.dhi.tzen.service;
 
-import java.time.LocalDateTime;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.heraizen.dhi.tzen.domain.TimeTableOutputWrapper;
-import com.heraizen.dhi.tzen.domain.TimeTableStatus;
 import com.heraizen.dhi.tzen.repo.TimeTableWrapperRepo;
 import com.spaneos.ga.tt.domain.TimeTableOutput;
 
@@ -25,8 +22,8 @@ public class TimeTableOutputWrapperServiceImpl implements TimeTableOutputWrapper
 		TimeTableOutputWrapper obj = null;
 		try {
 			LOGGER.info("Timetable output: {}",timeTableOutput);
-			obj = TimeTableOutputWrapper.builder().createAt(LocalDateTime.now())
-					.timeTableStatus(TimeTableStatus.GENERATED).timeTableOutput(timeTableOutput).build();
+			obj = TimeTableOutputWrapper.builder()
+					.timeTableOutput(timeTableOutput).build();
 			LOGGER.info("Timetable wrapper objec: {}",obj.getTimeTableOutput());
 			obj = timeTableWrapperRepo.save(obj);
 			LOGGER.info("Timetable wrapper object :{} is added", obj.getId());

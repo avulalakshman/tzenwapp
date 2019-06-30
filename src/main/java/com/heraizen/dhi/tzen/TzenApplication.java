@@ -1,11 +1,15 @@
 package com.heraizen.dhi.tzen;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.data.convert.ReadingConverter;
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 
 @SpringBootApplication
@@ -29,5 +33,7 @@ public class TzenApplication {
 	void setMapKeyDotReplacement(MappingMongoConverter mappingMongoConverter) {
 	    mappingMongoConverter.setMapKeyDotReplacement("_");
 	}
+	
+	
 
 }

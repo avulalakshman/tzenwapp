@@ -184,7 +184,7 @@ public class CollegeDaoImpl implements CollegeDao {
 
 	@Override
 	public CollegeDTO getCollegeDto(String cid, String deptId) {
-				System.out.println(cid+" "+deptId);
+		
 				Optional<College> optCollege=collegeRepo.findById(cid);
 				College college = optCollege.get();
 				Department department = null;
@@ -281,6 +281,33 @@ public class CollegeDaoImpl implements CollegeDao {
 				.build();
 		System.out.println(collegeDTO.getDepartment());
 	return collegeDTO;
+	}
+
+	@Override
+	public CollegeDTO addStuGroups(String cid, String id, Department dept) {
+		Optional<College> optCollege=collegeRepo.findById(cid);
+		College college = optCollege.get();
+		Department department = null;
+		for(Department d:college.getDepartments()) {
+				if(d.getId().equals(id)) {
+					
+					d.setStudentGrpList(dept.getStudentGrpList());
+					d.setConstraints(dept.getConstraints());
+					department = d;
+					break;
+				}
+		}
+		System.out.println("Department :"+department);
+		System.out.println("Student Groups :"+department.getStudentGrpList());
+		college = collegeRepo.save(college);
+		CollegeDTO collegeDTO = CollegeDTO.builder().cid(college.getCid()).department(department).name(college.getName())
+				.shortName(college.getShortName())
+				.labsInfo(college.getLabsInfo())
+				.teachersInfo(college.getTeachersInfo())
+				.workHrs(college.getWorkHrs())
+				.build();
+		
+	     return collegeDTO;
 	}
 	
 	

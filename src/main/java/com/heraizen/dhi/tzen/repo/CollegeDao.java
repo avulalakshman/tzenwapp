@@ -2,6 +2,7 @@ package com.heraizen.dhi.tzen.repo;
 
 import java.util.List;
 
+import com.heraizen.dhi.tzen.domain.College;
 import com.heraizen.dhi.tzen.domain.WorkHours;
 import com.heraizen.dhi.tzen.dto.CollegeDTO;
 import com.spaneos.ga.tt.domain.LabInfo;
@@ -47,6 +48,8 @@ public interface CollegeDao {
 		public CollegeDTO addStuGroups(String cid, String id, List<StudentGroup> studentGroups);
 
 		public CollegeDTO updateConstraints(String cid, String deptId, ConstraintsRequirement constraintsRequirement);
+
+		public CollegeDTO addStuGroups(String cid, String id, Department dept);
 		
 		
 }

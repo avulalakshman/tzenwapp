@@ -27,7 +27,7 @@ public interface TzenService {
 
 		public List<College> getColleges();
 
-		public String deleteCollege(String cid);
+		public College deleteCollege(String cid);
 
 		public Long addFaculty(String cid, Teacher teacher);
 		
@@ -65,4 +65,8 @@ public interface TzenService {
 		List<ConstraintInfo> getConstraints();
 
 		public TimeTableInputExt getTtInput(String cid, String deptId);
+
+		public CollegeDTO addStuGroups(String cid, String id, Department dept);
+
+		void generateTimeTable(String cid, String deptId, TimeTableInputExt ttInput);
 }

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import javax.websocket.server.PathParam;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,12 +33,16 @@ import com.heraizen.dhi.tzen.service.TimeTableService;
 import com.heraizen.dhi.tzen.service.TzenService;
 import com.spaneos.ga.tt.domain.LabInfo;
 import com.spaneos.ga.tt.domain.StudentGroup;
+import com.spaneos.ga.tt.domain.SubjectAllocation;
 import com.spaneos.ga.tt.domain.Teacher;
 import com.spaneos.ga.tt.domain.TimeTableOutput;
 import com.spaneos.ga.tt.ext.ConstraintsRequirement;
+import com.spaneos.ga.tt.ext.JsonUtil;
 import com.spaneos.ga.tt.ext.TimeTableInputExt;
 import com.spaneos.ga.tt.ext.domain.ConstraintInfo;
 import com.spaneos.ga.tt.ext.domain.Department;
+import com.spaneos.ga.tt.ext.domain.LabInfoInput;
+import com.spaneos.ga.tt.ext.domain.TeacherInfoInput;
 
 @RestController
 public class TzenController {
@@ -52,13 +58,15 @@ public class TzenController {
 	@Autowired
 	private TimeTableOutputWrapperService timeTableOutputWrapperService;
 
-	@PostMapping("/college")
+	@PostMapping("/college/addcollege")
 	public College addCollecge(@RequestBody College college) {
 		LOGGER.info("College with name is going to add:{}", college.getName());
 		college = tzenService.addCollege(college);
 		LOGGER.info("College is added with Id:{} and with Name:{}", college.getCid(), college.getName());
 		return college;
 	}
+	
+	
 
 	@GetMapping("/college/collegedto/{cid}/{deptId}")
 	public CollegeDTO getCollege(@PathVariable String cid, @PathVariable String deptId) {
@@ -159,14 +167,14 @@ public class TzenController {
 		return new ResponseEntity<>(workHrsList, HttpStatus.OK);
 	}
 
-	@GetMapping("/timetableoutput")
-	public TimeTableOutput timeTableOutput() {
-		TimeTableOutput timeTableOutput = timeTableService.getTimeTableOutput();
+	@GetMapping("/college/{cid}/{deptId}/timetableoutput")
+	public TimeTableOutput timeTableOutput(@PathVariable String cid,@PathVariable String deptId) {
+		TimeTableOutput timeTableOutput = timeTableService.getTimeTableOutput(cid, deptId);
 		return timeTableOutput;
 
 	}
 
-	@PostMapping("/addtimetableoutput")
+	@PostMapping("college/addtimetableoutput")
 	public TimeTableOutput saveTimeTableOutput(@RequestBody TimeTableOutput timeTableOutput) {
 		System.out.println("Timetableoutput: " + timeTableOutput);
 		System.out.println(timeTableOutputWrapperService);
@@ -176,15 +184,15 @@ public class TzenController {
 		return null;
 	}
 
-	@DeleteMapping("/deletecollege/{cid}")
-	public String deleteCollege(@PathVariable String cid) {
+	@DeleteMapping("/college/deletecollege/{cid}")
+	public College deleteCollege(@PathVariable String cid) {
 		LOGGER.info("College with id :{}  going to delete", cid);
-		cid = tzenService.deleteCollege(cid);
+		College college = tzenService.deleteCollege(cid);
 		LOGGER.info("College with id :{} deleted sucessfully", cid);
-		return cid;
+		return college;
 	}
 
-	@GetMapping("/allcolleges")
+	@GetMapping("college/allcolleges")
 	public List<College> getColleges() {
 		return tzenService.getColleges();
 	}
@@ -193,9 +201,10 @@ public class TzenController {
 	public List<LabInfo> handleFileUpload(@RequestParam("file") MultipartFile file, @PathVariable String cid) {
 		Optional<String> isUploaded = fileUPloadService.uploadFile(file);
 		List<LabInfo> labDetails = new ArrayList<LabInfo>();
-
-		if (file.getName().endsWith(".json")) {
-			labDetails = null; // TODO
+		String name = "File name :"+file.getOriginalFilename();
+		if (name.endsWith(".json")) {
+			LabInfoInput labInfo = JsonUtil.readLabInfoInput(isUploaded.get(),LabInfoInput.class);
+			labDetails = labInfo.getLabsInfo();
 		} else {
 			if (isUploaded.isPresent()) {
 				labDetails = tzenService.getLabDetails(isUploaded.get());
@@ -204,12 +213,14 @@ public class TzenController {
 		return labDetails;
 	}
 
-	@RequestMapping(value = "/uploadteacherinfo", method = RequestMethod.POST)
+	@RequestMapping(value = "college/{cid}/uploadteacherinfo", method = RequestMethod.POST)
 	public List<Teacher> uploadTeacherInfo(@RequestParam("file") MultipartFile file) {
 		Optional<String> isUploaded = fileUPloadService.uploadFile(file);
 		List<Teacher> facultyList = new ArrayList<>();
-		if (file.getName().endsWith(".json")) {
-			facultyList = null; // TODO
+		String name = "File name :"+file.getOriginalFilename();
+		if (name.endsWith(".json")) {
+			TeacherInfoInput teacterInfo = JsonUtil.readTeachersInfoInput(isUploaded.get(),TeacherInfoInput.class);
+			facultyList = teacterInfo.getTeachersInfo();
 		} else {
 			if (isUploaded.isPresent()) {
 				facultyList = tzenService.getTeachers(isUploaded.get());
@@ -223,9 +234,18 @@ public class TzenController {
 			@PathVariable String id) {
 		Optional<String> isUploaded = fileUPloadService.uploadFile(file);
 		List<StudentGroup> studentGroups = new ArrayList<>();
-
-		if (file.getName().endsWith(".json")) {
-			studentGroups = null; // TODO
+		String name = "File name :"+file.getOriginalFilename();
+		if (name.endsWith(".json")) {
+			Department dept = JsonUtil.readStudentGrpAndConstraints(isUploaded.get(),Department.class);
+			
+			for(StudentGroup s:dept.getStudentGrpList()) {
+				System.out.println("Student Group :"+s.getName());
+				System.out.println(s.getSubjectAllocations().size());
+				for(SubjectAllocation sa:s.getSubjectAllocations()) {
+					System.out.println("Subject Alocation" +sa);
+				}
+			}
+			return tzenService.addStuGroups(cid, id,dept);
 		} else {
 			if (isUploaded.isPresent()) {
 				studentGroups = tzenService.getStudentGroups(isUploaded.get());
@@ -236,7 +256,7 @@ public class TzenController {
 		return college;
 	}
 
-	@GetMapping("/getcollege/{cid}")
+	@GetMapping("/college/getcollege/{cid}")
 	public College getCollecgeHours(@PathVariable("cid") String cid) {
 		College college = tzenService.getCollege(cid);
 		return college;
@@ -265,9 +285,8 @@ public class TzenController {
 
 	@GetMapping("/college/ttinput/{cid}/{deptId}")
 	public TimeTableInputExt getTtInput(@PathVariable String cid, @PathVariable String deptId) {
-
 		TimeTableInputExt ttExt = tzenService.getTtInput(cid, deptId);
-
+		tzenService.generateTimeTable(cid,deptId,ttExt);
 		return ttExt;
 	}
 

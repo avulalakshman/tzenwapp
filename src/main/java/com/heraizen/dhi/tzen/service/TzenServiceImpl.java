@@ -1,12 +1,15 @@
 package com.heraizen.dhi.tzen.service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.heraizen.dhi.tzen.domain.College;
+import com.heraizen.dhi.tzen.domain.TimeTableOutputWrapper;
 import com.heraizen.dhi.tzen.domain.WorkHours;
 import com.heraizen.dhi.tzen.dto.CollegeDTO;
 import com.heraizen.dhi.tzen.parser.FacultyTemplateParser;
@@ -14,11 +17,14 @@ import com.heraizen.dhi.tzen.parser.LabTemplateParser;
 import com.heraizen.dhi.tzen.parser.StudentGroupTemplateParser;
 import com.heraizen.dhi.tzen.repo.CollegeDao;
 import com.heraizen.dhi.tzen.repo.CollegeRepo;
+import com.heraizen.dhi.tzen.repo.TimeTableWrapperRepo;
 import com.spaneos.ga.tt.domain.LabInfo;
 import com.spaneos.ga.tt.domain.StudentGroup;
 import com.spaneos.ga.tt.domain.Teacher;
 import com.spaneos.ga.tt.ext.ConstraintsContainer;
+import com.spaneos.ga.tt.ext.ConstraintsContainer.ConstraintLoadException;
 import com.spaneos.ga.tt.ext.ConstraintsRequirement;
+import com.spaneos.ga.tt.ext.TimeTableExtSchedulerFactory;
 import com.spaneos.ga.tt.ext.TimeTableInputExt;
 import com.spaneos.ga.tt.ext.domain.ConstraintInfo;
 import com.spaneos.ga.tt.ext.domain.Department;
@@ -33,9 +39,12 @@ public class TzenServiceImpl implements TzenService {
 	@Autowired
 	private StudentGroupTemplateParser studentGroupTemplateParser;
 	@Autowired
+	private TimeTableWrapperRepo timeTableWrapperRepo;
+	@Autowired
 	private CollegeRepo collegeRepo;
 	@Autowired
 	private CollegeDao collegeDao;
+	
 	
 	
 	@Override
@@ -136,12 +145,21 @@ public class TzenServiceImpl implements TzenService {
 	}
 
 	@Override
-	public String deleteCollege(String cid) {
-		if (cid != null) {
-			collegeRepo.deleteById(cid);
-
+	public College deleteCollege(String cid) {
+		Optional<College> optCollege=collegeRepo.findById(cid);
+		College c = null;
+		if(optCollege.isPresent()) {
+			 c = optCollege.get();
+			c.setDepartments(new ArrayList<Department>());
+			c.setLabsInfo(new ArrayList<>());
+			c.setShortName("");
+			c.setTeachersInfo(new ArrayList<>());
+			c.setWorkHrs(new ArrayList<>());
+			c.setCode("");
+			c = collegeRepo.save(c); 
+			
 		}
-		return cid;
+		return c;
 	}
 
 	@Override
@@ -243,6 +261,35 @@ public class TzenServiceImpl implements TzenService {
 
 		return ttExt;
 	}
-	
-	
+
+	@Override
+	public CollegeDTO addStuGroups(final String cid, String id, Department dept) {
+		CollegeDTO college =  collegeDao.addStuGroups(cid,id,dept);
+		return college;
+	}
+
+	@Override
+	public void generateTimeTable(final String cid,String deptId,TimeTableInputExt ttInput) {
+		try {
+			new TimeTableExtSchedulerFactory().withTimeTableInput(ttInput).buildScheduler().scheduleAsync().thenApply(e->{
+				TimeTableOutputWrapper obj = timeTableWrapperRepo.findByCidAndDeptId(cid, deptId);
+				if (obj!=null) {
+					obj.setTimeTableOutput(e);
+					timeTableWrapperRepo.save(obj);
+				}else {
+					TimeTableOutputWrapper ttow = new TimeTableOutputWrapper();
+					ttow.setCid(cid);
+					ttow.setDeptId(deptId);
+					ttow.setTimeTableOutput(e);
+					timeTableWrapperRepo.save(ttow);
+				}
+				
+				return true;
+			});
+		} catch (ConstraintLoadException e) {
+			e.printStackTrace();
+		}
+		
+	}
+
 }

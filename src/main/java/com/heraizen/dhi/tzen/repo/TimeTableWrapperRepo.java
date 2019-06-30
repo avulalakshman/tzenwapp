@@ -6,4 +6,6 @@ import com.heraizen.dhi.tzen.domain.TimeTableOutputWrapper;
 
 public interface TimeTableWrapperRepo extends MongoRepository<TimeTableOutputWrapper, String> {
 
+	TimeTableOutputWrapper findByCidAndDeptId(String cid, String deptId);
+
 }

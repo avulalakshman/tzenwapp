@@ -1,7 +1,5 @@
 package com.heraizen.dhi.tzen.domain;
 
-import java.time.LocalDateTime;
-
 import org.springframework.data.annotation.Id;
 
 import com.spaneos.ga.tt.domain.TimeTableOutput;
@@ -19,8 +17,9 @@ import lombok.Setter;
 public class TimeTableOutputWrapper {
 		@Id
 		private String id;
-		private LocalDateTime createAt;
-		private String collegeId;
-		private TimeTableStatus timeTableStatus;
+	
+		private String cid;
+		private String deptId;
+	
 		private TimeTableOutput timeTableOutput;
 }

@@ -4,5 +4,5 @@ import com.spaneos.ga.tt.domain.TimeTableOutput;
 
 public interface TimeTableService {
 	
-		public TimeTableOutput getTimeTableOutput();
+		public TimeTableOutput getTimeTableOutput(String cid,String deptId);
 }
