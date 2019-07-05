@@ -20,7 +20,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CollegeDTO {
+public class CollegeWithDeptDTO {
 	private String cid;
 	private String name;
 	private String code;

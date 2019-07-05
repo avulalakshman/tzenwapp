@@ -5,8 +5,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -14,7 +19,8 @@ import org.springframework.stereotype.Repository;
 
 import com.heraizen.dhi.tzen.domain.College;
 import com.heraizen.dhi.tzen.domain.WorkHours;
-import com.heraizen.dhi.tzen.dto.CollegeDTO;
+import com.heraizen.dhi.tzen.dto.CollegeWithDeptDTO;
+import com.heraizen.dhi.tzen.service.exception.ResourceNotFound;
 import com.mongodb.client.result.UpdateResult;
 import com.spaneos.ga.tt.domain.LabInfo;
 import com.spaneos.ga.tt.domain.StudentGroup;
@@ -29,12 +35,13 @@ public class CollegeDaoImpl implements CollegeDao {
 	@Autowired
 	private CollegeRepo collegeRepo;
 
+	
+	private static final Logger LOG = LoggerFactory.getLogger(CollegeDaoImpl.class);
+	
 	@Override
 	public Long addTeacher(String cid, Teacher teacher) {
 		UpdateResult res = null;
 		if (teacher.getId() == null) {
-			String uid = UUID.randomUUID().toString();
-			teacher.setId(uid);
 			res = mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(cid)),
 					new Update().push("teachersInfo", teacher), "college");
 		} else {
@@ -183,7 +190,7 @@ public class CollegeDaoImpl implements CollegeDao {
 	}
 
 	@Override
-	public CollegeDTO getCollegeDto(String cid, String deptId) {
+	public CollegeWithDeptDTO getCollegeDto(String cid, String deptId) {
 		
 				Optional<College> optCollege=collegeRepo.findById(cid);
 				College college = optCollege.get();
@@ -196,7 +203,7 @@ public class CollegeDaoImpl implements CollegeDao {
 				}
 				System.out.println("Department "+department);
 				
-				CollegeDTO collegeDTO = CollegeDTO.builder().cid(college.getCid()).department(department).name(college.getName())
+				CollegeWithDeptDTO collegeDTO = CollegeWithDeptDTO.builder().cid(college.getCid()).department(department).name(college.getName())
 						.shortName(college.getShortName())
 						.labsInfo(college.getLabsInfo())
 						.teachersInfo(college.getTeachersInfo())
@@ -208,7 +215,7 @@ public class CollegeDaoImpl implements CollegeDao {
 	}
 
 	@Override
-	public CollegeDTO updateAndGetCollegeDto(CollegeDTO collegeDTO) {
+	public CollegeWithDeptDTO updateAndGetCollegeDto(CollegeWithDeptDTO collegeDTO) {
 
 		Optional<College> optCollege=collegeRepo.findById(collegeDTO.getCid());
 		College college = optCollege.get();
@@ -221,7 +228,7 @@ public class CollegeDaoImpl implements CollegeDao {
 		}
 		college = collegeRepo.save(college);
 
-		CollegeDTO retCollegeDTO = CollegeDTO.builder().cid(college.getCid()).department(collegeDTO.getDepartment()).name(college.getName())
+		CollegeWithDeptDTO retCollegeDTO = CollegeWithDeptDTO.builder().cid(college.getCid()).department(collegeDTO.getDepartment()).name(college.getName())
 				.shortName(college.getShortName())
 				.labsInfo(college.getLabsInfo())
 				.teachersInfo(college.getTeachersInfo())
@@ -230,7 +237,7 @@ public class CollegeDaoImpl implements CollegeDao {
 	}
 
 	@Override
-	public CollegeDTO addStuGroups(String cid, String deptId, List<StudentGroup> studentGroups) {
+	public CollegeWithDeptDTO addStuGroups(String cid, String deptId, List<StudentGroup> studentGroups) {
 		
 		
 		
@@ -250,7 +257,7 @@ public class CollegeDaoImpl implements CollegeDao {
 		}
 		college = collegeRepo.save(college);
 		
-		CollegeDTO collegeDTO = CollegeDTO.builder().cid(college.getCid()).department(department).name(college.getName())
+		CollegeWithDeptDTO collegeDTO = CollegeWithDeptDTO.builder().cid(college.getCid()).department(department).name(college.getName())
 				.shortName(college.getShortName())
 				.labsInfo(college.getLabsInfo())
 				.teachersInfo(college.getTeachersInfo())
@@ -260,7 +267,7 @@ public class CollegeDaoImpl implements CollegeDao {
 	}
 
 	@Override
-	public CollegeDTO updateConstraints(String cid, String deptId, ConstraintsRequirement constraintsRequirement) {
+	public CollegeWithDeptDTO updateConstraints(String cid, String deptId, ConstraintsRequirement constraintsRequirement) {
 		System.out.println("College id :"+cid+" department id :"+deptId);
 		Optional<College> optCollege=collegeRepo.findById(cid);
 		College college = optCollege.get();
@@ -274,7 +281,7 @@ public class CollegeDaoImpl implements CollegeDao {
 				}
 		}
 		college = collegeRepo.save(college);
-		CollegeDTO collegeDTO = CollegeDTO.builder().cid(college.getCid()).department(department).name(college.getName())
+		CollegeWithDeptDTO collegeDTO = CollegeWithDeptDTO.builder().cid(college.getCid()).department(department).name(college.getName())
 				.shortName(college.getShortName())
 				.labsInfo(college.getLabsInfo())
 				.teachersInfo(college.getTeachersInfo())
@@ -284,7 +291,7 @@ public class CollegeDaoImpl implements CollegeDao {
 	}
 
 	@Override
-	public CollegeDTO addStuGroups(String cid, String id, Department dept) {
+	public CollegeWithDeptDTO addStuGroups(String cid, String id, Department dept) {
 		Optional<College> optCollege=collegeRepo.findById(cid);
 		College college = optCollege.get();
 		Department department = null;
@@ -300,7 +307,7 @@ public class CollegeDaoImpl implements CollegeDao {
 		System.out.println("Department :"+department);
 		System.out.println("Student Groups :"+department.getStudentGrpList());
 		college = collegeRepo.save(college);
-		CollegeDTO collegeDTO = CollegeDTO.builder().cid(college.getCid()).department(department).name(college.getName())
+		CollegeWithDeptDTO collegeDTO = CollegeWithDeptDTO.builder().cid(college.getCid()).department(department).name(college.getName())
 				.shortName(college.getShortName())
 				.labsInfo(college.getLabsInfo())
 				.teachersInfo(college.getTeachersInfo())
@@ -308,6 +315,22 @@ public class CollegeDaoImpl implements CollegeDao {
 				.build();
 		
 	     return collegeDTO;
+	}
+
+	@Override
+	public CollegeWithDeptDTO getCollegeDeptDTO(String cid,String deptId) {
+		 AggregationOperation unwind = Aggregation.unwind("departments");
+		 AggregationOperation match = Aggregation.match(Criteria.where("_id").is(cid).and("departments.id").is(deptId));
+		 
+		 Aggregation aggregation = Aggregation.newAggregation(unwind,match);
+		
+		 AggregationResults<CollegeWithDeptDTO> cdDto = this.mongoTemplate.aggregate(aggregation, College.class, CollegeWithDeptDTO.class);
+		 List<CollegeWithDeptDTO> mappedResult = cdDto.getMappedResults();
+		 if(mappedResult!=null && mappedResult.size()>0) {
+			 return mappedResult.get(0);
+		 }
+
+		 throw new ResourceNotFound("There is no deparment for the given input" );
 	}
 	
 	

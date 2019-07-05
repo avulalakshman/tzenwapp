@@ -4,7 +4,8 @@ import java.util.List;
 
 import com.heraizen.dhi.tzen.domain.College;
 import com.heraizen.dhi.tzen.domain.WorkHours;
-import com.heraizen.dhi.tzen.dto.CollegeDTO;
+import com.heraizen.dhi.tzen.dto.CollegeDto;
+import com.heraizen.dhi.tzen.dto.CollegeWithDeptDTO;
 import com.spaneos.ga.tt.domain.LabInfo;
 import com.spaneos.ga.tt.domain.StudentGroup;
 import com.spaneos.ga.tt.domain.Teacher;
@@ -15,11 +16,15 @@ import com.spaneos.ga.tt.ext.domain.Department;
 
 public interface TzenService {
 	
+		public CollegeDto createCollege(CollegeDto collegeDto);
+		public CollegeDto getCollege(String cid);
+		public List<Teacher> getFacultyList(String cid);
+		
+		
+		
 		public List<LabInfo> getLabDetails(String filePath);
 
-		public College getCollege(String cid);
 
-		public College addCollege(College college);
 
 		public List<Teacher> getTeachers(String string);
 
@@ -34,7 +39,6 @@ public interface TzenService {
 		public Long addFacultyList(String cid, List<Teacher> teachers);
 
 		public Teacher getFaculty(String cid, String id);
-		public List<Teacher> getFacultyList(String cid);
 
 		public boolean deleteFaculty(String cid,String id);
 
@@ -54,19 +58,19 @@ public interface TzenService {
 
 		public Long addDept(String cid, Department dept);
 
-		public CollegeDTO getCollegeDto(String cid, String deptId);
+		public CollegeWithDeptDTO getCollegeDto(String cid, String deptId);
 
-		public CollegeDTO updateAndGetCollegeDto(CollegeDTO collegeDTO);
+		public CollegeWithDeptDTO updateAndGetCollegeDto(CollegeWithDeptDTO collegeDTO);
 
-		public CollegeDTO addStuGroups(String cid, String id, List<StudentGroup> studentGroups);
+		public CollegeWithDeptDTO addStuGroups(String cid, String id, List<StudentGroup> studentGroups);
 
-		public CollegeDTO updateConstraints(String cid, String deptId, ConstraintsRequirement constraintsRequirement);
+		public CollegeWithDeptDTO updateConstraints(String cid, String deptId, ConstraintsRequirement constraintsRequirement);
 
 		List<ConstraintInfo> getConstraints();
 
 		public TimeTableInputExt getTtInput(String cid, String deptId);
 
-		public CollegeDTO addStuGroups(String cid, String id, Department dept);
+		public CollegeWithDeptDTO addStuGroups(String cid, String id, Department dept);
 
 		void generateTimeTable(String cid, String deptId, TimeTableInputExt ttInput);
 }

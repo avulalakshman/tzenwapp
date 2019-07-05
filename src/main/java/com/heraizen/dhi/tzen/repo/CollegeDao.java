@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.heraizen.dhi.tzen.domain.College;
 import com.heraizen.dhi.tzen.domain.WorkHours;
-import com.heraizen.dhi.tzen.dto.CollegeDTO;
+import com.heraizen.dhi.tzen.dto.CollegeWithDeptDTO;
 import com.spaneos.ga.tt.domain.LabInfo;
 import com.spaneos.ga.tt.domain.StudentGroup;
 import com.spaneos.ga.tt.domain.Teacher;
@@ -40,16 +40,18 @@ public interface CollegeDao {
 
 		public Long addDept(String cid, Department dept);
 
-		public CollegeDTO getCollegeDto(String cid, String deptId);
+		public CollegeWithDeptDTO getCollegeDto(String cid, String deptId);
 
 	
-		public CollegeDTO updateAndGetCollegeDto(CollegeDTO collegeDTO);
+		public CollegeWithDeptDTO updateAndGetCollegeDto(CollegeWithDeptDTO collegeDTO);
 
-		public CollegeDTO addStuGroups(String cid, String id, List<StudentGroup> studentGroups);
+		public CollegeWithDeptDTO addStuGroups(String cid, String id, List<StudentGroup> studentGroups);
 
-		public CollegeDTO updateConstraints(String cid, String deptId, ConstraintsRequirement constraintsRequirement);
+		public CollegeWithDeptDTO updateConstraints(String cid, String deptId, ConstraintsRequirement constraintsRequirement);
 
-		public CollegeDTO addStuGroups(String cid, String id, Department dept);
+		public CollegeWithDeptDTO addStuGroups(String cid, String id, Department dept);
+
+		public CollegeWithDeptDTO getCollegeDeptDTO(String cid, String deptId);
 		
 		
 }

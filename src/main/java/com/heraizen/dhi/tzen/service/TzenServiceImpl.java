@@ -4,20 +4,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
+import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import org.springframework.util.Assert;
 import com.heraizen.dhi.tzen.domain.College;
 import com.heraizen.dhi.tzen.domain.TimeTableOutputWrapper;
 import com.heraizen.dhi.tzen.domain.WorkHours;
-import com.heraizen.dhi.tzen.dto.CollegeDTO;
+import com.heraizen.dhi.tzen.dto.CollegeDto;
+import com.heraizen.dhi.tzen.dto.CollegeWithDeptDTO;
 import com.heraizen.dhi.tzen.parser.FacultyTemplateParser;
 import com.heraizen.dhi.tzen.parser.LabTemplateParser;
 import com.heraizen.dhi.tzen.parser.StudentGroupTemplateParser;
 import com.heraizen.dhi.tzen.repo.CollegeDao;
 import com.heraizen.dhi.tzen.repo.CollegeRepo;
 import com.heraizen.dhi.tzen.repo.TimeTableWrapperRepo;
+import com.heraizen.dhi.tzen.service.exception.AlreadyExistsException;
+import com.heraizen.dhi.tzen.service.exception.ResourceNotFound;
 import com.spaneos.ga.tt.domain.LabInfo;
 import com.spaneos.ga.tt.domain.StudentGroup;
 import com.spaneos.ga.tt.domain.Teacher;
@@ -32,6 +37,8 @@ import com.spaneos.ga.tt.ext.domain.Department;
 @Service
 public class TzenServiceImpl implements TzenService {
 
+	private static final Logger LOG = LoggerFactory.getLogger(TzenServiceImpl.class);
+
 	@Autowired
 	private LabTemplateParser labTemplateParser;
 	@Autowired
@@ -44,13 +51,89 @@ public class TzenServiceImpl implements TzenService {
 	private CollegeRepo collegeRepo;
 	@Autowired
 	private CollegeDao collegeDao;
-	
-	
+
+	@Autowired
+	private ModelMapper modelMapper;
+
+	@Override
+	public CollegeDto createCollege(CollegeDto collegeDto) {
+
+		Assert.notNull(collegeDto, "College DTO object is can't be null!");
+		Assert.notNull(collegeDto.getName(), "College name can't be empty!");
+
+		if (collegeRepo.findByName(collegeDto.getName()) != null) {
+			LOG.info(String.format(String.format("College with  name: %s already exists", collegeDto.getName())));
+			throw new AlreadyExistsException(
+					String.format("College with  name: %s already exists", collegeDto.getName()));
+		}
+
+		College college = modelMapper.map(collegeDto, College.class);
+		college = collegeRepo.save(college);
+		LOG.info("College is save with id:{} and with name :{}", college.getCid(), college.getName());
+		collegeDto = modelMapper.map(college, CollegeDto.class);
+
+		return collegeDto;
+
+	}
+
+	@Override
+	public CollegeDto getCollege(String cid) {
+		Assert.notNull(cid, "College id can't be null");
+		Optional<College> optCollege = collegeRepo.findById(cid.trim());
+		if (!optCollege.isPresent()) {
+			LOG.info("No college is found with the given id :{}",cid);
+			throw new ResourceNotFound("College is not found with the given information");
+		} else {
+			return modelMapper.map(optCollege.get(), CollegeDto.class);
+
+		}
+
+	}
 	
 	@Override
-	public List<ConstraintInfo> getConstraints(){
-		   return  ConstraintsContainer.getInstance().getAvailableConstraintsInfo();
+	public List<Teacher> getFacultyList(String cid) {
+		Assert.notNull(cid, "College id can't be null");
 		
+		Optional<College> optCollege = collegeRepo.findById(cid.trim());
+		if (!optCollege.isPresent()) {
+			LOG.info("No college is found with the given id :{}",cid);
+			throw new ResourceNotFound("College is not found with the given information");
+		} else {
+			College college = optCollege.get();
+			if(college.getTeachersInfo()!=null && college.getTeachersInfo().size() > 0) {
+				LOG.info("College has total {} faculties",college.getTeachersInfo().size());
+				return college.getTeachersInfo();
+			}else {
+				throw new ResourceNotFound(String.format("Faculty is not yet added to the college")) ;
+			}
+		}
+
+	}
+	
+	@Override
+	public CollegeWithDeptDTO getCollegeDto(String cid, String deptId) {
+		Assert.notNull(cid, "College id can't be null");
+		Assert.notNull(deptId, "Department id can't be null!");
+		CollegeWithDeptDTO collegeDeptDTO = collegeDao.getCollegeDeptDTO(cid, deptId);
+		CollegeWithDeptDTO collegeDto = collegeDao.getCollegeDto(cid, deptId);
+		return collegeDto;
+	}
+	
+	@Override
+	public Long addFaculty(String cid, Teacher teacher) {
+		Assert.notNull(cid, "College id can't be null");
+		Assert.notNull(teacher, "College DTO object is can't be null!");
+		Long count = collegeDao.addTeacher(cid, teacher);
+		if(count == 0) {
+			LOG.info("Teacher with name :{} couldn't added",teacher.getName());
+		}
+		return count;
+	}
+
+	@Override
+	public List<ConstraintInfo> getConstraints() {
+		return ConstraintsContainer.getInstance().getAvailableConstraintsInfo();
+
 	}
 
 	@Override
@@ -58,23 +141,6 @@ public class TzenServiceImpl implements TzenService {
 		List<LabInfo> labList = labTemplateParser.parse(filePath);
 		System.out.println("Lab details:" + labList);
 		return labList;
-	}
-
-	@Override
-	public College getCollege(String cid) {
-		College college = collegeRepo.findById(cid.trim()).orElseGet(null);
-		return college;
-	}
-
-	@Override
-	public College addCollege(College college) {
-		try {
-			return collegeRepo.save(college);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
-
 	}
 
 	@Override
@@ -89,11 +155,7 @@ public class TzenServiceImpl implements TzenService {
 		return teacher;
 	}
 
-	@Override
-	public List<Teacher> getFacultyList(String cid) {
-		List<Teacher> teachers = collegeDao.getFacultyList(cid);
-		return teachers;
-	}
+	
 
 	@Override
 	public boolean deleteFaculty(String cid, String id) {
@@ -146,28 +208,23 @@ public class TzenServiceImpl implements TzenService {
 
 	@Override
 	public College deleteCollege(String cid) {
-		Optional<College> optCollege=collegeRepo.findById(cid);
+		Optional<College> optCollege = collegeRepo.findById(cid);
 		College c = null;
-		if(optCollege.isPresent()) {
-			 c = optCollege.get();
+		if (optCollege.isPresent()) {
+			c = optCollege.get();
 			c.setDepartments(new ArrayList<Department>());
 			c.setLabsInfo(new ArrayList<>());
 			c.setShortName("");
 			c.setTeachersInfo(new ArrayList<>());
 			c.setWorkHrs(new ArrayList<>());
 			c.setCode("");
-			c = collegeRepo.save(c); 
-			
+			c = collegeRepo.save(c);
+
 		}
 		return c;
 	}
 
-	@Override
-	public Long addFaculty(String cid, Teacher teacher) {
-
-		Long count = collegeDao.addTeacher(cid, teacher);
-		return count;
-	}
+	
 
 	@Override
 	public Long addFacultyList(String cid, List<Teacher> teachers) {
@@ -199,57 +256,68 @@ public class TzenServiceImpl implements TzenService {
 		return count;
 	}
 
-	@Override
-	public CollegeDTO getCollegeDto(String cid, String deptId) {
-		CollegeDTO collegeDto = collegeDao.getCollegeDto(cid, deptId);
-		return collegeDto;
-	}
-
-	@Override
-	public CollegeDTO updateAndGetCollegeDto(CollegeDTO collegeDTO) {
-		CollegeDTO collegeDto = collegeDao.updateAndGetCollegeDto(collegeDTO);
-		return collegeDto;
-	}
-
-	@Override
-	public CollegeDTO addStuGroups(String cid, String id, List<StudentGroup> studentGroups) {
-		CollegeDTO collegeDto = collegeDao.addStuGroups(cid,id,studentGroups);
-		return collegeDto;
-	}
-
-	@Override
-	public CollegeDTO updateConstraints(String cid, String deptId, ConstraintsRequirement constraintsRequirement) {
-		CollegeDTO collegeDto = collegeDao.updateConstraints(cid,deptId,constraintsRequirement);
-		return collegeDto;
-	}
 	
-	public int getFromIdx(WorkHours wh , int i) {
-		
-		int retVal=0;
+
+	@Override
+	public CollegeWithDeptDTO updateAndGetCollegeDto(CollegeWithDeptDTO collegeDTO) {
+		CollegeWithDeptDTO collegeDto = collegeDao.updateAndGetCollegeDto(collegeDTO);
+		return collegeDto;
+	}
+
+	@Override
+	public CollegeWithDeptDTO addStuGroups(String cid, String id, List<StudentGroup> studentGroups) {
+		CollegeWithDeptDTO collegeDto = collegeDao.addStuGroups(cid, id, studentGroups);
+		return collegeDto;
+	}
+
+	@Override
+	public CollegeWithDeptDTO updateConstraints(String cid, String deptId,
+			ConstraintsRequirement constraintsRequirement) {
+		CollegeWithDeptDTO collegeDto = collegeDao.updateConstraints(cid, deptId, constraintsRequirement);
+		return collegeDto;
+	}
+
+	public int getFromIdx(WorkHours wh, int i) {
+
+		int retVal = 0;
 		switch (i) {
-			case 0: retVal = wh.getMon();break;
-			case 1: retVal = wh.getTue();break;
-			case 2: retVal = wh.getWed();break;
-			case 3: retVal = wh.getThu();break;
-			case 4: retVal = wh.getFri();break;
-			case 5: retVal = wh.getSat();break;
-			case 6: retVal = wh.getSun();break;
+		case 0:
+			retVal = wh.getMon();
+			break;
+		case 1:
+			retVal = wh.getTue();
+			break;
+		case 2:
+			retVal = wh.getWed();
+			break;
+		case 3:
+			retVal = wh.getThu();
+			break;
+		case 4:
+			retVal = wh.getFri();
+			break;
+		case 5:
+			retVal = wh.getSat();
+			break;
+		case 6:
+			retVal = wh.getSun();
+			break;
 		}
 		return retVal;
 	}
 
 	@Override
 	public TimeTableInputExt getTtInput(String cid, String deptId) {
-		CollegeDTO collegeDto = collegeDao.getCollegeDto(cid, deptId);
-		
+		CollegeWithDeptDTO collegeDto = collegeDao.getCollegeDto(cid, deptId);
+
 		TimeTableInputExt ttExt = new TimeTableInputExt();
 		Department department = collegeDto.getDepartment();
 		List<WorkHours> workHours = collegeDto.getWorkHrs();
-		
+
 		int workHrs[][] = new int[7][workHours.size()];
-		
-		for(int i=0;i<7;i++) {
-			for ( int j=0; j<workHours.size();j++) {
+
+		for (int i = 0; i < 7; i++) {
+			for (int j = 0; j < workHours.size(); j++) {
 				workHrs[i][j] = getFromIdx(workHours.get(j), i);
 			}
 		}
@@ -263,33 +331,34 @@ public class TzenServiceImpl implements TzenService {
 	}
 
 	@Override
-	public CollegeDTO addStuGroups(final String cid, String id, Department dept) {
-		CollegeDTO college =  collegeDao.addStuGroups(cid,id,dept);
+	public CollegeWithDeptDTO addStuGroups(final String cid, String id, Department dept) {
+		CollegeWithDeptDTO college = collegeDao.addStuGroups(cid, id, dept);
 		return college;
 	}
 
 	@Override
-	public void generateTimeTable(final String cid,String deptId,TimeTableInputExt ttInput) {
+	public void generateTimeTable(final String cid, String deptId, TimeTableInputExt ttInput) {
 		try {
-			new TimeTableExtSchedulerFactory().withTimeTableInput(ttInput).buildScheduler().scheduleAsync().thenApply(e->{
-				TimeTableOutputWrapper obj = timeTableWrapperRepo.findByCidAndDeptId(cid, deptId);
-				if (obj!=null) {
-					obj.setTimeTableOutput(e);
-					timeTableWrapperRepo.save(obj);
-				}else {
-					TimeTableOutputWrapper ttow = new TimeTableOutputWrapper();
-					ttow.setCid(cid);
-					ttow.setDeptId(deptId);
-					ttow.setTimeTableOutput(e);
-					timeTableWrapperRepo.save(ttow);
-				}
-				
-				return true;
-			});
+			new TimeTableExtSchedulerFactory().withTimeTableInput(ttInput).buildScheduler().scheduleAsync()
+					.thenApply(e -> {
+						TimeTableOutputWrapper obj = timeTableWrapperRepo.findByCidAndDeptId(cid, deptId);
+						if (obj != null) {
+							obj.setTimeTableOutput(e);
+							timeTableWrapperRepo.save(obj);
+						} else {
+							TimeTableOutputWrapper ttow = new TimeTableOutputWrapper();
+							ttow.setCid(cid);
+							ttow.setDeptId(deptId);
+							ttow.setTimeTableOutput(e);
+							timeTableWrapperRepo.save(ttow);
+						}
+
+						return true;
+					});
 		} catch (ConstraintLoadException e) {
 			e.printStackTrace();
 		}
-		
+
 	}
 
 }

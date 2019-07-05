@@ -6,6 +6,8 @@ import com.heraizen.dhi.tzen.domain.College;
 
 public interface CollegeRepo extends MongoRepository<College,String> {
 
+	College findByName(String name);
+
 	
 
 }
